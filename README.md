@@ -2,7 +2,7 @@
 
 Break an AI agent on purpose. A real [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) agent calls tools through a mock agent gateway. Flip a switch, and watch every step as a packet moving through the system, with a trace and an outcome at the end.
 
-It makes the ideas in [AI Agent Platforms](https://ammar-site-black.vercel.app) testable instead of just readable.
+It makes the ideas in [my writing](https://ammar-site-black.vercel.app) testable instead of just readable.
 
 ## Scenarios
 
