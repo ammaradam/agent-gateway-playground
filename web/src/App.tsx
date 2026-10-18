@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getScenarios, runScenario } from './api';
 import { Flow } from './Flow';
 import { Waterfall } from './Waterfall';
@@ -8,15 +8,19 @@ import type { RunResult, Scenario, Toggle } from './types';
 const SITE = 'https://ammar-site-black.vercel.app';
 const CHECKS = [['authz.agent', 'Agent'], ['authz.user', 'User'], ['authz.delegation', 'Delegation'], ['authz.resource', 'Resource']] as const;
 
-function useMedia(query: string) {
-  const [match, setMatch] = useState(() => matchMedia(query).matches);
-  useEffect(() => {
-    const m = matchMedia(query);
-    const on = () => setMatch(m.matches);
-    m.addEventListener('change', on);
-    return () => m.removeEventListener('change', on);
-  }, [query]);
-  return match;
+/** True while the element is narrower than `below` px, so the diagram fits the space it has. */
+function useNarrow(ref: React.RefObject<HTMLElement>, below: number) {
+  const [narrow, setNarrow] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setNarrow(el.clientWidth < below);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref, below, ref.current]);
+  return narrow;
 }
 
 /** How long each step lasts on screen. Real durations are compressed so a 5 s timeout stays watchable. */
@@ -36,7 +40,8 @@ export default function App() {
   const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState('');
   const reduced = useMemo(reducedMotion, []);
-  const vertical = useMedia('(max-width: 720px)');
+  const stageRef = useRef<HTMLDivElement>(null);
+  const vertical = useNarrow(stageRef, 640);
   const scn = scenarios.find(s => s.id === sid);
   const { durs, starts, total } = useMemo(() => schedule(result), [result]);
   const pb = usePlayback(total);
@@ -126,7 +131,7 @@ export default function App() {
             <a className="link" href={`${SITE}/posts/${scn.post}`}>Read the post behind this ›</a>
           </aside>
 
-          <div className="stage tile">
+          <div className="stage tile" ref={stageRef}>
             <Flow events={events} active={active} progress={progress} reduced={reduced} vertical={vertical} />
 
             {hasChecks && (

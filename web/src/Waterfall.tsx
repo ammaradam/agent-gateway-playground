@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { TraceEvent } from './types';
 
 const NAME: Record<string, string> = { user: 'User', agent: 'Agent', gateway: 'Gateway', tool: 'Tool', ledger: 'Store' };
@@ -12,8 +13,17 @@ interface Props {
 }
 
 export function Waterfall({ events, starts, durs, total, active, onPick }: Props) {
+  const list = useRef<HTMLOListElement>(null);
+  // Keep the current step in view inside the list, without moving the page.
+  useEffect(() => {
+    const ol = list.current, row = ol?.children[active] as HTMLElement | undefined;
+    if (!ol || !row || ol.scrollHeight <= ol.clientHeight) return;
+    if (row.offsetTop < ol.scrollTop || row.offsetTop + row.offsetHeight > ol.scrollTop + ol.clientHeight) {
+      ol.scrollTo({ top: row.offsetTop - ol.clientHeight / 2, behavior: 'smooth' });
+    }
+  }, [active]);
   return (
-    <ol className="waterfall" aria-label="Trace of every step">
+    <ol className="waterfall" aria-label="Trace of every step" ref={list}>
       {events.map((e, i) => (
         <li key={e.id}>
           <button type="button" className={`wf-row ${i === active ? 'active' : ''} ${i > active ? 'future' : ''}`} onClick={() => onPick(i)}>
