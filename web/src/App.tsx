@@ -8,6 +8,17 @@ import type { RunResult, Scenario, Toggle } from './types';
 const SITE = 'https://ammar-site-black.vercel.app';
 const CHECKS = [['authz.agent', 'Agent'], ['authz.user', 'User'], ['authz.delegation', 'Delegation'], ['authz.resource', 'Resource']] as const;
 
+function useMedia(query: string) {
+  const [match, setMatch] = useState(() => matchMedia(query).matches);
+  useEffect(() => {
+    const m = matchMedia(query);
+    const on = () => setMatch(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, [query]);
+  return match;
+}
+
 /** How long each step lasts on screen. Real durations are compressed so a 5 s timeout stays watchable. */
 function schedule(result: RunResult | null) {
   const evs = result?.events ?? [];
@@ -25,6 +36,7 @@ export default function App() {
   const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState('');
   const reduced = useMemo(reducedMotion, []);
+  const vertical = useMedia('(max-width: 720px)');
   const scn = scenarios.find(s => s.id === sid);
   const { durs, starts, total } = useMemo(() => schedule(result), [result]);
   const pb = usePlayback(total);
@@ -115,7 +127,7 @@ export default function App() {
           </aside>
 
           <div className="stage tile">
-            <div className="flow-scroll"><Flow events={events} active={active} progress={progress} reduced={reduced} /></div>
+            <Flow events={events} active={active} progress={progress} reduced={reduced} vertical={vertical} />
 
             {hasChecks && (
               <ul className="checks" aria-label="Gateway checks">
@@ -126,19 +138,21 @@ export default function App() {
               </ul>
             )}
 
-            <p className="narration" aria-live="polite">
-              <span className="clock">{clock}</span>
-              {ev ? ev.detail : 'Press play to watch the run.'}
-            </p>
+            <div className="dock">
+              <p className="narration" aria-live="polite">
+                <span className="clock">{clock}</span>
+                {ev ? ev.detail : 'Press play to watch the run.'}
+              </p>
 
-            <div className="bar">
-              <button type="button" className="btn primary" onClick={pb.playing ? pb.pause : pb.play} disabled={!result}>{pb.playing ? 'Pause' : finished ? 'Replay' : 'Play'}</button>
-              <button type="button" className="btn" aria-label="Previous step" onClick={() => pb.seek(starts[Math.max(0, active - 1)] ?? 0)} disabled={!result || active <= 0}>‹</button>
-              <button type="button" className="btn" aria-label="Next step" onClick={() => pb.seek((starts[Math.min(events.length - 1, active + 1)] ?? 0) + 1)} disabled={!result || active >= events.length - 1}>›</button>
-              <input type="range" min={0} max={Math.round(total)} value={Math.round(pb.t)} onChange={e => pb.seek(Number(e.target.value))} aria-label="Position in the run" />
-              <select value={pb.speed} onChange={e => pb.setSpeed(Number(e.target.value))} aria-label="Speed">
-                <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
-              </select>
+              <div className="bar">
+                <button type="button" className="btn primary" onClick={pb.playing ? pb.pause : pb.play} disabled={!result}>{pb.playing ? 'Pause' : finished ? 'Replay' : 'Play'}</button>
+                <button type="button" className="btn" aria-label="Previous step" onClick={() => pb.seek(starts[Math.max(0, active - 1)] ?? 0)} disabled={!result || active <= 0}>‹</button>
+                <button type="button" className="btn" aria-label="Next step" onClick={() => pb.seek((starts[Math.min(events.length - 1, active + 1)] ?? 0) + 1)} disabled={!result || active >= events.length - 1}>›</button>
+                <input type="range" min={0} max={Math.round(total)} value={Math.round(pb.t)} onChange={e => pb.seek(Number(e.target.value))} aria-label="Position in the run" />
+                <select value={pb.speed} onChange={e => pb.setSpeed(Number(e.target.value))} aria-label="Speed">
+                  <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
+                </select>
+              </div>
             </div>
           </div>
 
