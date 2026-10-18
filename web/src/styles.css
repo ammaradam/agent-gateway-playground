@@ -52,6 +52,9 @@ select { border: 1px solid var(--line); background: var(--card); border-radius: 
 .stage { display: flex; flex-direction: column; gap: 10px; }
 .flow { width: 100%; height: auto; display: block; }
 .flow.vertical { max-width: 380px; margin: 0 auto; }
+.flow.compact { max-width: none; }
+.flow.compact .node-title { font-size: 13px; } .flow.compact .node-sub { font-size: 9.5px; }
+.flow.compact .chip-text { font-size: 10px; } .flow.compact .row-text { font-size: 9.5px; } .flow.compact .hint { font-size: 9px; }
 .dock { display: flex; flex-direction: column; gap: 10px; }
 .edge { stroke: var(--line); stroke-width: 2; fill: none; }
 .edge.on { stroke-width: 3; }
@@ -120,7 +123,18 @@ dd.error { color: var(--red); } dd.warn { color: var(--amber); }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { flex: none; white-space: nowrap; min-height: 44px; scroll-snap-align: start; }
   .tile { border-radius: 22px; padding: 18px; }
-  .stage { order: 1; } .controls { order: 2; } .trace { order: 3; } .outcome { order: 4; }
+  .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .stage { order: 1; grid-column: 1; padding: 10px 6px; } .trace { order: 1; grid-column: 2; padding: 10px 6px; }
+  .controls { order: 2; grid-column: 1 / -1; } .outcome { order: 3; grid-column: 1 / -1; }
+  .trace h3 { padding-left: 6px; font-size: 0.95rem; }
+  .wf-path { display: none; }
+  .wf-row { padding: 7px 6px; gap: 4px 6px; }
+  .wf-label { font-size: 12.5px; }
+  .wf-ms { font-size: 10.5px; }
+  .waterfall { margin-top: 4px; max-height: 540px; overflow-y: auto; scrollbar-width: thin; }
+  .checks { gap: 4px; }
+  .checks li { padding: 5px 8px; font-size: 11.5px; gap: 6px; }
+  .checks em { display: none; }
   .toggle { grid-template-columns: 52px 1fr; padding: 6px 0; }
   .switch { width: 52px; height: 32px; }
   .switch::after { width: 28px; height: 28px; }
@@ -140,4 +154,4 @@ dd.error { color: var(--red); } dd.warn { color: var(--amber); }
   .wf-row { padding: 10px 8px; }
   .outcome dl { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }

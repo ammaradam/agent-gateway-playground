@@ -19,7 +19,7 @@ export function Waterfall({ events, starts, durs, total, active, onPick }: Props
     const ol = list.current, row = ol?.children[active] as HTMLElement | undefined;
     if (!ol || !row || ol.scrollHeight <= ol.clientHeight) return;
     if (row.offsetTop < ol.scrollTop || row.offsetTop + row.offsetHeight > ol.scrollTop + ol.clientHeight) {
-      ol.scrollTo({ top: row.offsetTop - ol.clientHeight / 2, behavior: 'smooth' });
+      ol.scrollTop = Math.max(0, row.offsetTop - ol.clientHeight / 2);
     }
   }, [active]);
   return (

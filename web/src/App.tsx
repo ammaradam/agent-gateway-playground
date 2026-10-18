@@ -42,6 +42,7 @@ export default function App() {
   const reduced = useMemo(reducedMotion, []);
   const stageRef = useRef<HTMLDivElement>(null);
   const vertical = useNarrow(stageRef, 640);
+  const compact = useNarrow(stageRef, 260);
   const scn = scenarios.find(s => s.id === sid);
   const { durs, starts, total } = useMemo(() => schedule(result), [result]);
   const pb = usePlayback(total);
@@ -132,7 +133,7 @@ export default function App() {
           </aside>
 
           <div className="stage tile" ref={stageRef}>
-            <Flow events={events} active={active} progress={progress} reduced={reduced} vertical={vertical} />
+            <Flow events={events} active={active} progress={progress} reduced={reduced} vertical={vertical} compact={compact} />
 
             {hasChecks && (
               <ul className="checks" aria-label="Gateway checks">

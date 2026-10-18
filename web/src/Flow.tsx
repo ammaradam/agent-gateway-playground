@@ -15,6 +15,7 @@ interface Layout {
   w: number; h: number; nodeW: number; nodeH: number;
   pos: Record<Lane, { x: number; y: number }>;
   vertical: boolean;
+  compact?: boolean;
 }
 
 const HORIZONTAL: Layout = {
@@ -26,12 +27,18 @@ const VERTICAL: Layout = {
   pos: { user: { x: 104, y: 48 }, agent: { x: 104, y: 160 }, gateway: { x: 104, y: 272 }, tool: { x: 104, y: 384 }, ledger: { x: 104, y: 496 } },
 };
 
+const COMPACT: Layout = {
+  w: 156, h: 478, nodeW: 96, nodeH: 52, vertical: true, compact: true,
+  pos: { user: { x: 52, y: 32 }, agent: { x: 52, y: 106 }, gateway: { x: 52, y: 180 }, tool: { x: 52, y: 254 }, ledger: { x: 52, y: 328 } },
+};
+const COMPACT_SUB: Record<Lane, string> = { user: 'asks', agent: 'MAF agent', gateway: 'policy', tool: 'tickets', ledger: 'in memory' };
+
 const gap = (a: Lane, b: Lane) => Math.abs(ORDER.indexOf(a) - ORDER.indexOf(b));
 
 function packetAt(L: Layout, src: Lane, dst: Lane, p: number) {
   const a = L.pos[src], b = L.pos[dst];
   if (gap(src, dst) > 1) { // arc around the nodes in between
-    const c = L.vertical ? { x: a.x + 190, y: (a.y + b.y) / 2 } : { x: (a.x + b.x) / 2, y: a.y - 96 };
+    const c = L.vertical ? { x: a.x + (L.compact ? 64 : 190), y: (a.y + b.y) / 2 } : { x: (a.x + b.x) / 2, y: a.y - 96 };
     const q0 = (1 - p) * (1 - p), q1 = 2 * (1 - p) * p, q2 = p * p;
     return { x: q0 * a.x + q1 * c.x + q2 * b.x, y: q0 * a.y + q1 * c.y + q2 * b.y };
   }
@@ -40,7 +47,7 @@ function packetAt(L: Layout, src: Lane, dst: Lane, p: number) {
 
 function arcPath(L: Layout, src: Lane, dst: Lane) {
   const a = L.pos[src], b = L.pos[dst];
-  const c = L.vertical ? { x: a.x + 380, y: (a.y + b.y) / 2 } : { x: (a.x + b.x) / 2, y: a.y - 192 };
+  const c = L.vertical ? { x: a.x + (L.compact ? 128 : 380), y: (a.y + b.y) / 2 } : { x: (a.x + b.x) / 2, y: a.y - 192 };
   return `M ${a.x} ${a.y} Q ${c.x} ${c.y} ${b.x} ${b.y}`;
 }
 
@@ -50,10 +57,11 @@ interface Props {
   progress: number; // 0..1 inside the current event
   reduced: boolean;
   vertical: boolean;
+  compact?: boolean;
 }
 
-export function Flow({ events, active, progress, reduced, vertical }: Props) {
-  const L = vertical ? VERTICAL : HORIZONTAL;
+export function Flow({ events, active, progress, reduced, vertical, compact }: Props) {
+  const L = compact ? COMPACT : vertical ? VERTICAL : HORIZONTAL;
   const ev = active >= 0 ? events[active] : null;
   const p = reduced ? 1 : progress;
   const moving = !!ev && ev.src !== ev.dst;
@@ -81,13 +89,13 @@ export function Flow({ events, active, progress, reduced, vertical }: Props) {
 
   // Where the store's rows and the idempotency hint sit.
   const store = L.pos.ledger, gw = L.pos.gateway;
-  const rowsAt = L.vertical ? { x: store.x + L.nodeW / 2 + 14, y: store.y - 30 } : { x: store.x - L.nodeW / 2, y: store.y + L.nodeH / 2 + 14 };
-  const rowW = L.vertical ? 140 : L.nodeW;
-  const hintAt = L.vertical ? { x: gw.x + L.nodeW / 2 + 14, y: gw.y + 4, anchor: 'start' as const } : { x: gw.x, y: gw.y + L.nodeH / 2 + 26, anchor: 'middle' as const };
-  const chipAt = (lane: Lane) => (L.vertical ? { x: L.pos[lane].x + L.nodeW / 2 + 12, y: L.pos[lane].y - 4 } : { x: L.pos[lane].x, y: L.pos[lane].y - L.nodeH / 2 - 22 });
+  const rowsAt = L.compact ? { x: 8, y: store.y + L.nodeH / 2 + 12 } : L.vertical ? { x: store.x + L.nodeW / 2 + 14, y: store.y - 30 } : { x: store.x - L.nodeW / 2, y: store.y + L.nodeH / 2 + 14 };
+  const rowW = L.compact ? 140 : L.vertical ? 140 : L.nodeW;
+  const hintAt = L.compact ? { x: gw.x + 10, y: gw.y + L.nodeH / 2 + 17, anchor: 'start' as const } : L.vertical ? { x: gw.x + L.nodeW / 2 + 14, y: gw.y + 4, anchor: 'start' as const } : { x: gw.x, y: gw.y + L.nodeH / 2 + 26, anchor: 'middle' as const };
+  const chipAt = (lane: Lane) => (L.compact ? { x: L.pos[lane].x, y: L.pos[lane].y - L.nodeH / 2 - 15 } : L.vertical ? { x: L.pos[lane].x + L.nodeW / 2 + 12, y: L.pos[lane].y - 4 } : { x: L.pos[lane].x, y: L.pos[lane].y - L.nodeH / 2 - 22 });
 
   return (
-    <svg viewBox={`0 0 ${L.w} ${L.h}`} role="img" className={vertical ? 'flow vertical' : 'flow'}
+    <svg viewBox={`0 0 ${L.w} ${L.h}`} role="img" className={compact ? 'flow vertical compact' : vertical ? 'flow vertical' : 'flow'}
       aria-label="Flow diagram: the user asks the agent, the agent calls the gateway, the gateway calls the tool, and the tool writes to the store.">
       <defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" /></filter></defs>
 
@@ -103,8 +111,8 @@ export function Flow({ events, active, progress, reduced, vertical }: Props) {
           <g key={l} transform={`translate(${n.x - L.nodeW / 2} ${n.y - L.nodeH / 2})`}>
             {c && <rect width={L.nodeW} height={L.nodeH} rx="18" fill={c} opacity=".35" filter="url(#glow)" />}
             <rect width={L.nodeW} height={L.nodeH} rx="18" className="node" style={c ? { stroke: c, strokeWidth: 2 } : undefined} />
-            <text x={L.nodeW / 2} y={L.vertical ? 28 : 34} textAnchor="middle" className="node-title">{m.title}</text>
-            <text x={L.nodeW / 2} y={L.vertical ? 48 : 55} textAnchor="middle" className="node-sub">{m.sub}</text>
+            <text x={L.nodeW / 2} y={L.compact ? 23 : L.vertical ? 28 : 34} textAnchor="middle" className="node-title">{m.title}</text>
+            <text x={L.nodeW / 2} y={L.compact ? 40 : L.vertical ? 48 : 55} textAnchor="middle" className="node-sub">{L.compact ? COMPACT_SUB[l] : m.sub}</text>
           </g>
         );
       })}
@@ -113,17 +121,17 @@ export function Flow({ events, active, progress, reduced, vertical }: Props) {
         {rows.slice(-4).map((r, i) => (
           <g key={r.text + i} transform={`translate(0 ${i * 22})`}>
             <rect width={rowW} height="18" rx="9" className={r.gone ? 'row gone' : 'row'} />
-            <text x="9" y="13" className={r.gone ? 'row-text gone' : 'row-text'}>{r.text.length > 21 ? r.text.slice(0, 20) + '…' : r.text}</text>
+            <text x="9" y="13" className={r.gone ? 'row-text gone' : 'row-text'}>{r.text.length > 24 ? r.text.slice(0, 23) + '…' : r.text}</text>
           </g>
         ))}
       </g>
-      {hint && <text x={hintAt.x} y={hintAt.y} textAnchor={hintAt.anchor} className="hint">{hint.label}</text>}
+      {hint && <text x={hintAt.x} y={hintAt.y} textAnchor={hintAt.anchor} className="hint">{L.compact && hint.label.length > 17 ? hint.label.slice(0, 16) + '…' : hint.label}</text>}
 
       {ev && pos && (
         <g transform={`translate(${pos.x} ${pos.y})`}>
           <circle r="16" fill={COLOR[ev.status]} opacity=".25" />
           <circle r="7" fill={COLOR[ev.status]} />
-          {L.vertical ? <Chip text={ev.label} color={COLOR[ev.status]} x={20} anchor="start" /> : <Chip text={ev.label} color={COLOR[ev.status]} y={-30} />}
+          {L.vertical ? <Chip text={ev.label} color={COLOR[ev.status]} x={L.compact ? 16 : 20} anchor="start" small={L.compact} /> : <Chip text={ev.label} color={COLOR[ev.status]} y={-30} />}
         </g>
       )}
       {ev && !moving && (
@@ -131,7 +139,7 @@ export function Flow({ events, active, progress, reduced, vertical }: Props) {
           <rect x={-L.nodeW / 2 - 6} y={-L.nodeH / 2 - 6} width={L.nodeW + 12} height={L.nodeH + 12} rx="22" fill="none"
             stroke={COLOR[ev.status]} strokeWidth="2" opacity={reduced ? 0.8 : 1 - p * 0.7} />
           <g transform={`translate(${chipAt(ev.src).x - L.pos[ev.src].x} ${chipAt(ev.src).y - L.pos[ev.src].y})`}>
-            <Chip text={ev.label} color={COLOR[ev.status]} anchor={L.vertical ? 'start' : 'middle'} />
+            <Chip text={ev.label} color={COLOR[ev.status]} anchor={L.vertical && !L.compact ? 'start' : 'middle'} small={L.compact} />
           </g>
         </g>
       )}
@@ -139,13 +147,15 @@ export function Flow({ events, active, progress, reduced, vertical }: Props) {
   );
 }
 
-function Chip({ text, color, x = 0, y = 0, anchor = 'middle' }: { text: string; color: string; x?: number; y?: number; anchor?: 'start' | 'middle' }) {
-  const w = Math.max(54, text.length * 7.2 + 20);
+function Chip({ text, color, x = 0, y = 0, anchor = 'middle', small = false }: { text: string; color: string; x?: number; y?: number; anchor?: 'start' | 'middle'; small?: boolean }) {
+  const shown = small && text.length > 12 ? text.slice(0, 11) + '…' : text;
+  const w = small ? Math.max(40, shown.length * 6 + 16) : Math.max(54, text.length * 7.2 + 20);
   const left = anchor === 'start' ? 0 : -w / 2;
+  const h = small ? 22 : 26;
   return (
     <g transform={`translate(${x} ${y})`}>
-      <rect x={left} y={-13} width={w} height={26} rx="13" fill={color} />
-      <text x={left + w / 2} textAnchor="middle" y="5" className="chip-text">{text}</text>
+      <rect x={left} y={-h / 2} width={w} height={h} rx={h / 2} fill={color} />
+      <text x={left + w / 2} textAnchor="middle" y={small ? 4 : 5} className="chip-text">{shown}</text>
     </g>
   );
 }
