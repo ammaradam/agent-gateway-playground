@@ -36,7 +36,7 @@ class Gateway:
         n = w.sent[name] = w.sent.get(name, 0) + 1
         key = args.get("idempotency_key")
         rec.emit("agent", "gateway", "gateway.request", name,
-                 detail=f"Agent calls {name}({_fmt(args)}).", args=args, attempt=n)
+                 detail=f"Agent calls {name}" + (f" with key {key}." if key else "."), args=args, attempt=n)
 
         denied = self._authorize(name, args)
         if denied:

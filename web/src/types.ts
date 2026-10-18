@@ -15,12 +15,13 @@ export interface TraceEvent {
 }
 
 export type Toggle =
-  | { key: string; label: string; type: 'bool'; default: boolean; help?: string }
-  | { key: string; label: string; type: 'choice'; default: string; options: { value: string; label: string }[]; help?: string };
+  | { key: string; label: string; short: string; type: 'bool'; default: boolean; help?: string }
+  | { key: string; label: string; short: string; type: 'choice'; default: string; options: { value: string; label: string }[]; help?: string };
 
 export interface Scenario {
   id: string;
   title: string;
+  short: string;
   post: string;
   summary: string;
   prompt: string;
