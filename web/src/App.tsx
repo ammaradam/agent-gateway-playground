@@ -49,13 +49,18 @@ export default function App() {
   const pick = (s: Scenario) => {
     const defaults = Object.fromEntries(s.toggles.map(t => [t.key, t.default]));
     setSid(s.id); setToggles(defaults); run(s.id, defaults);
+    const u = new URL(location.href); u.searchParams.set('scenario', s.id); history.replaceState(null, '', u);
   };
   const change = (t: Toggle, value: boolean | string) => {
     const next = { ...toggles, [t.key]: value };
     setToggles(next); run(sid, next);
   };
 
-  useEffect(() => { if (scenarios.length) pick(scenarios[0]); /* first load */ // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!scenarios.length) return;
+    const wanted = new URLSearchParams(location.search).get('scenario');
+    pick(scenarios.find(s => s.id === wanted) ?? scenarios[0]); // first load; ?scenario=id deep-links
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarios.length]);
 
   // The step on screen right now.

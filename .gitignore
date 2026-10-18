@@ -7,3 +7,6 @@ web/dist/
 .vercel/
 .claude/
 .env
+
+.vercel
+.env*
